@@ -18,7 +18,7 @@
 - Opening bids are arbitrary positive integers within balance; raises are arbitrary higher integers; passing ends that bidder's participation for the current card.
 - No one-unit roster reserve exists. Zero-budget selection follows the exact “pay 1 to take / decline to give for 0” rule in the spec.
 - Same-device and online play must call the same pure rules engine and be reproducible from the same seed and event log.
-- Online rooms have two writable player seats, at most twenty read-only spectator seats, six-character room codes, reconnectable seat tokens, and 24-hour inactivity expiry.
+- Online rooms have two writable player seats, at most three read-only spectator seats, six-character room codes, reconnectable seat tokens, and 24-hour inactivity expiry.
 - The seven-map pool, BP order, agent pools, simulation weights, score rules, and explanatory output match the spec exactly.
 - The interface uses a VCT-broadcast information hierarchy with restrained cyan/coral/purple accents, no official logos, player photographs, team marks, or copied VALORANT client art.
 - Mobile keeps the active card and action controls visible; all controls are keyboard reachable and have visible focus states.
@@ -458,7 +458,7 @@ git commit -m "feat: add same-device auction experience"
 
 Schema tables must include `rooms(code PRIMARY KEY, seed, version, state_json, created_at, last_active_at, spectators_open)`, `room_seats(room_code, role, token_hash, nickname, last_seen_at, PRIMARY KEY(room_code, role, token_hash))`, and `room_events(room_code, version, event_json, created_at, PRIMARY KEY(room_code, version))`, plus expiry and room-event indexes.
 
-Test two player joins, spectator joins 1–20, rejection of spectator 21, spectator write rejection, stale-version rejection, duplicate action idempotency, and 24-hour expiry.
+Test two player joins, spectator joins 1–3, rejection of spectator 4, spectator write rejection, stale-version rejection, duplicate action idempotency, and 24-hour expiry.
 
 - [ ] **Step 2: Run the focused tests and confirm failure**
 

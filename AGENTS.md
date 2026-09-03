@@ -18,7 +18,7 @@ Implement the plan task by task. Treat the design spec as authoritative when a p
 - Every professional player's rating uses at least one complete official event as its peak sample. A final, playoff round, map, agent, or filtered slice cannot independently define peak form.
 - Keep the fourth-version ten-player pool, tiers, prices, attributes, roles, maps, and agent pools unchanged unless the user explicitly requests a revision.
 - In particular, ZmjjKK remains T0.5 / 6 and CHICHOO remains T0.5 / 5.
-- Support same-device play, two-seat online rooms, and up to twenty read-only spectators.
+- Support same-device play, two-seat online rooms, and up to three read-only spectators.
 - Use the same deterministic domain engine for local and online modes.
 - Preserve the approved broadcast-style visual direction and do not use official logos, team marks, player photographs, or copied VALORANT client artwork.
 
