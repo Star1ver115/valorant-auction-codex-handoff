@@ -77,3 +77,8 @@ export type PlayerCard = {
   attributes: Attributes;
   agents: AgentId[];
 };
+
+export type SeededRng = {
+  next(): number;
+  int(maxExclusive: number): number;
+};

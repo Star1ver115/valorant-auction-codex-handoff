@@ -9,6 +9,6 @@ export function createTestVite() {
     configFile: false,
     root: projectRoot,
     resolve: { alias: { "@": projectRoot } },
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, ws: false },
   });
 }
