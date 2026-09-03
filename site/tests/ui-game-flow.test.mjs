@@ -209,3 +209,51 @@ test("returns the latest snapshot from a 409 action response", async () => {
   assert.equal(result.conflict, true);
   assert.deepEqual(result.response, current);
 });
+
+test("renders the complete BP, agent draft, BO5 rail, statistics, and report", async () => {
+  const { createGame, reduceGame } = await load();
+  const { MapBpStage } = await vite.ssrLoadModule("/components/game/MapBpStage.tsx");
+  const { AgentDraft } = await vite.ssrLoadModule("/components/game/AgentDraft.tsx");
+  const { Bo5Broadcast } = await vite.ssrLoadModule("/components/game/Bo5Broadcast.tsx");
+  const { PostMatchReport } = await vite.ssrLoadModule("/components/game/PostMatchReport.tsx");
+
+  let state = reduceGame(createGame("ui-results", PLAYERS), { type: "START_GAME" }).state;
+  while (state.phase === "AUCTION" || state.phase === "ZERO_BUDGET_SELECTION") {
+    if (state.phase === "ZERO_BUDGET_SELECTION") {
+      state = reduceGame(state, {
+        type: "ZERO_CHOICE",
+        actor: state.auction.zeroBudget.actor,
+        choice: "DECLINE",
+      }).state;
+    } else {
+      const bidding = state.auction.bidding;
+      state = reduceGame(
+        state,
+        bidding.currentBid === null
+          ? { type: "BID", actor: bidding.actor, amount: 1 }
+          : { type: "PASS", actor: bidding.actor },
+      ).state;
+    }
+  }
+
+  const bpHtml = renderToStaticMarkup(createElement(MapBpStage, { snapshot: state }));
+  const draftHtml = renderToStaticMarkup(createElement(AgentDraft, { snapshot: state }));
+  const broadcastHtml = renderToStaticMarkup(createElement(Bo5Broadcast, { snapshot: state }));
+  const reportHtml = renderToStaticMarkup(createElement(PostMatchReport, { snapshot: state }));
+
+  assert.equal((bpHtml.match(/data-bp-step=/g) ?? []).length, 7);
+  assert.match(bpHtml, /禁用|选择|决胜/);
+  assert.match(bpHtml, /理由/);
+  assert.equal((draftHtml.match(/data-agent-pick=/g) ?? []).length, 50);
+  assert.match(draftHtml, /阵容适配/);
+  assert.match(broadcastHtml, /无需进行/);
+  assert.match(broadcastHtml, /地图 MVP/);
+  assert.match(broadcastHtml, /ACS/);
+  assert.match(broadcastHtml, /K \/ D \/ A/);
+  assert.match(broadcastHtml, /首杀/);
+  assert.match(broadcastHtml, /残局/);
+  assert.match(reportHtml, /系列赛 MVP/);
+  assert.match(reportHtml, /最佳购买/);
+  assert.match(reportHtml, /溢价观察/);
+  assert.ok((reportHtml.match(/data-win-factor=/g) ?? []).length >= 2);
+});
