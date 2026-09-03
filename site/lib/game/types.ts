@@ -294,3 +294,52 @@ export type SeriesResult = {
     }>;
   };
 };
+
+export type GamePhase =
+  | "LOBBY"
+  | "AUCTION"
+  | "ZERO_BUDGET_SELECTION"
+  | "MAP_BP"
+  | "AGENT_SELECT"
+  | "MATCH_SIMULATION"
+  | "SERIES_RESULT";
+
+export type GamePlayers = Record<TeamId, { nickname: string }>;
+
+export type GameAction = { type: "START_GAME" } | AuctionAction;
+
+export type DomainEvent =
+  | { type: "GAME_CREATED"; players: GamePlayers }
+  | { type: "GAME_STARTED"; order: PlayerId[] }
+  | { type: "ACTION_ACCEPTED"; action: AuctionAction }
+  | { type: "AUCTION_EVENT"; event: AuctionEvent }
+  | { type: "PHASE_ADVANCED"; phase: GamePhase }
+  | { type: "MAP_BP_COMPLETED"; result: MapBpResult }
+  | {
+      type: "AGENT_SELECTION_COMPLETED";
+      compositions: Partial<Record<MapId, Record<TeamId, AgentComposition>>>;
+    }
+  | { type: "SERIES_SIMULATED"; result: SeriesResult };
+
+export type GameState = {
+  schemaVersion: 1;
+  dataVersion: "v4";
+  version: number;
+  seed: string;
+  phase: GamePhase;
+  players: GamePlayers;
+  auction: AuctionState | null;
+  purchases: PurchaseRecord[];
+  bp: MapBpResult | null;
+  compositions: Partial<Record<MapId, Record<TeamId, AgentComposition>>> | null;
+  series: SeriesResult | null;
+  eventLog: DomainEvent[];
+  authorization?: unknown;
+};
+
+export type GameTransition = {
+  state: GameState;
+  events: DomainEvent[];
+};
+
+export type PublicGameSnapshot = Omit<GameState, "authorization">;

@@ -114,7 +114,7 @@ export function selectAgents(
   if (!MAP_POOL.includes(map)) throw new DomainError("UNKNOWN_MAP", "Unknown map");
 
   const rng = createRng(seed);
-  let best:
+  type Candidate =
     | {
         picks: AgentPick[];
         score: number;
@@ -122,20 +122,24 @@ export function selectAgents(
         coverage: AgentComposition["coverage"];
       }
     | undefined;
+  let bestCovered: Candidate;
+  let bestFallback: Candidate;
   const picks: AgentPick[] = [];
   const usedAgents = new Set<AgentId>();
 
   function search(playerIndex: number) {
     if (playerIndex === roster.length) {
       const scored = scoreComposition(picks, map);
-      if (scored.coverage.controller < 1 || scored.coverage.initiator < 1) return;
-
+      const covered = scored.coverage.controller >= 1 && scored.coverage.initiator >= 1;
+      const best = covered ? bestCovered : bestFallback;
       if (
         !best ||
         scored.score > best.score ||
         (scored.score === best.score && rng.next() < 0.5)
       ) {
-        best = { picks: picks.map((pick) => ({ ...pick })), ...scored };
+        const candidate = { picks: picks.map((pick) => ({ ...pick })), ...scored };
+        if (covered) bestCovered = candidate;
+        else bestFallback = candidate;
       }
       return;
     }
@@ -158,21 +162,25 @@ export function selectAgents(
   }
 
   search(0);
+  const best = bestCovered ?? bestFallback;
   if (!best) {
     throw new DomainError(
       "NO_AGENT_COMPOSITION",
-      "No unique-agent composition can cover controller and initiator",
+      "No unique-agent composition can be formed from career agent pools",
     );
   }
 
   const roleCount = Object.values(best.coverage).filter((count) => count > 0).length;
+  const hasCoreCoverage = best.coverage.controller >= 1 && best.coverage.initiator >= 1;
   return {
     map,
     picks: best.picks,
     coverage: best.coverage,
     score: best.score,
     ledger: best.ledger,
-    explanation: `阵容覆盖控场与先锋，并以 ${roleCount} 类职责取得 ${best.score.toFixed(2)} 的地图适配分。`,
+    explanation: hasCoreCoverage
+      ? `阵容覆盖控场与先锋，并以 ${roleCount} 类职责取得 ${best.score.toFixed(2)} 的地图适配分。`
+      : `生涯特工池无法同时覆盖控场与先锋，系统保留无重复选择，并以 ${roleCount} 类职责取得 ${best.score.toFixed(2)} 的地图适配分。`,
   };
 }
 
