@@ -244,7 +244,7 @@ Expected: FAIL because transitions are not implemented.
 
 - [ ] **Step 4: Implement legal transitions and domain errors**
 
-Return `{ state, events }`; reject non-integers, over-budget bids, non-higher raises, repeat participation after pass, wrong actors, sixth-player awards, and actions carrying stale phase data. Apply the 12-second timeout rules through explicit `TIMEOUT` actions rather than wall-clock reads.
+Return `{ state, events }`; reject non-integers, over-budget bids, non-higher raises, repeat participation after pass, wrong actors, sixth-player awards, stale phase data, and any unsupported timeout action. Auction turns never advance without an explicit player bid, pass, or zero-budget choice.
 
 - [ ] **Step 5: Add invariant/property loops**
 
@@ -408,7 +408,7 @@ git commit -m "feat: compose reproducible game engine"
 - Modify: `app/page.tsx`, `app/globals.css`
 
 **Interfaces:**
-- Produces: `useLocalGame()` with `{ snapshot, dispatch, reset }`; auction UI covering lobby, bidding, pass, timeout, and zero-budget choices.
+- Produces: `useLocalGame()` with `{ snapshot, dispatch, reset }`; auction UI covering lobby, bidding, pass, and zero-budget choices without a countdown.
 - Consumes: `createGame`, `reduceGame`, and `publicSnapshot`.
 
 - [ ] **Step 1: Write failing interaction tests**
@@ -422,7 +422,7 @@ Expected: FAIL because the game components do not exist.
 
 - [ ] **Step 3: Implement local persistence and the recognizable auction screen**
 
-Persist `{ schemaVersion, seed, events }` under `peak-auction:local:v1`; validate before hydration and discard corrupt records with a visible recovery notice. Build the first viewport around the current player card, both budgets, both compact rosters, turn indicator, bid input, pass button, timer, and auction-order strip.
+Persist `{ schemaVersion, seed, events }` under `peak-auction:local:v1`; validate before hydration and discard corrupt records with a visible recovery notice. Build the first viewport around the current player card, both budgets, both compact rosters, turn indicator, bid input, pass button, and auction-order strip.
 
 - [ ] **Step 4: Apply mobile and keyboard behavior**
 
@@ -583,7 +583,7 @@ git commit -m "feat: add bp broadcast and post-match report"
 
 - [ ] **Step 1: Add failure-path tests**
 
-Cover invalid/over-budget/non-integer bids, stale actions, refresh during auction and simulation, corrupt local state, disconnected player timeout, spectator disconnect, full room, closed spectators, expired room, both budgets at zero, one roster filling early, and the final card.
+Cover invalid/over-budget/non-integer bids, stale actions, refresh during auction and simulation, corrupt local state, disconnected-player reconnect without automatic state changes, spectator disconnect, full room, closed spectators, expired room, both budgets at zero, one roster filling early, and the final card.
 
 - [ ] **Step 2: Run the complete suite and fix only observed failures**
 

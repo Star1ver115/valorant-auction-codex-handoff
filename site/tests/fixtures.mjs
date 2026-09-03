@@ -12,3 +12,62 @@ export function createTestVite() {
     server: { middlewareMode: true, ws: false },
   });
 }
+
+export const PLAYER_IDS = [
+  "aspas",
+  "chronicle",
+  "zmjjkk",
+  "leo",
+  "less",
+  "mako",
+  "forsaken",
+  "nobody",
+  "chichoo",
+  "boaster",
+];
+
+export function auctionFixture({ opener = "A" } = {}) {
+  return {
+    phase: "AUCTION",
+    order: [...PLAYER_IDS],
+    lotIndex: 0,
+    teams: {
+      A: { budget: 20, roster: [] },
+      B: { budget: 20, roster: [] },
+    },
+    bidding: {
+      playerId: PLAYER_IDS[0],
+      opener,
+      actor: opener,
+      currentBid: null,
+      highBidder: null,
+      passed: [],
+    },
+    zeroBudget: null,
+  };
+}
+
+export function zeroBudgetFixture() {
+  return {
+    phase: "ZERO_BUDGET_SELECTION",
+    order: [
+      "aspas",
+      "leo",
+      "chichoo",
+      "chronicle",
+      "zmjjkk",
+      "less",
+      "mako",
+      "forsaken",
+      "nobody",
+      "boaster",
+    ],
+    lotIndex: 2,
+    teams: {
+      A: { budget: 0, roster: ["aspas"] },
+      B: { budget: 5, roster: ["leo"] },
+    },
+    bidding: null,
+    zeroBudget: { zeroTeam: "A", solventTeam: "B", actor: "B" },
+  };
+}
