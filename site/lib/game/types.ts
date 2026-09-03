@@ -194,3 +194,103 @@ export type AgentComposition = {
   ledger: { P: number; M: number; R: number; S: number; F: number };
   explanation: string;
 };
+
+export type PurchaseRecord = {
+  playerId: PlayerId;
+  team: TeamId;
+  price: number;
+};
+
+export type SeriesInput = {
+  seed: string;
+  rosters: TeamRosters;
+  bp: MapBpResult;
+  compositions: Partial<
+    Record<MapId, Record<TeamId, AgentComposition>>
+  >;
+  purchases: PurchaseRecord[];
+};
+
+export type RoundCategory =
+  | "PISTOL"
+  | "ANTI_ECO"
+  | "RIFLE"
+  | "ECO"
+  | "SAVE"
+  | "CLUTCH";
+
+export type RoundEvent = {
+  number: number;
+  category: RoundCategory;
+  winner: TeamId;
+  scoreAfter: Record<TeamId, number>;
+  attackTeam: TeamId;
+  description: string;
+};
+
+export type PlayerLine = {
+  playerId: PlayerId;
+  team: TeamId;
+  acs: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+  firstKills: number;
+  clutches: number;
+};
+
+export type PlayedMapResult = {
+  status: "PLAYED";
+  map: MapId;
+  score: Record<TeamId, number>;
+  winner: TeamId;
+  rounds: RoundEvent[];
+  playerLines: PlayerLine[];
+  mvp: PlayerLine;
+  highlights: string[];
+  winningFactors: string[];
+  compositions: Record<TeamId, AgentComposition>;
+  strength: Record<TeamId, number>;
+};
+
+export type UnplayedMapResult = {
+  status: "NOT_NEEDED";
+  map: MapId;
+};
+
+export type SeriesMapResult = PlayedMapResult | UnplayedMapResult;
+
+export type SeriesResult = {
+  winner: TeamId;
+  score: Record<TeamId, number>;
+  maps: SeriesMapResult[];
+  seriesMvp: PlayerLine;
+  bestPurchase: PurchaseRecord & { value: number };
+  overpay: PurchaseRecord & { premium: number };
+  winningFactors: string[];
+  strengthLedger: {
+    weights: {
+      individual: 40;
+      composition: 20;
+      map: 14;
+      leadership: 10;
+      synergy: 4;
+      form: 12;
+    };
+    maps: Array<{
+      map: MapId;
+      teams: Record<
+        TeamId,
+        {
+          individual: number;
+          composition: number;
+          map: number;
+          leadership: number;
+          synergy: number;
+          form: number;
+          total: number;
+        }
+      >;
+    }>;
+  };
+};
