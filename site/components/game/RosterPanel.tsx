@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { PLAYER_BY_ID } from "@/lib/game/player-pool";
 import type { GamePlayers, TeamId } from "@/lib/game/types";
 
@@ -32,7 +31,7 @@ export function RosterPanel({
               <span className={player ? "font-semibold" : "text-muted-foreground"}>
                 {player?.name ?? `席位 ${index + 1}`}
               </span>
-              {player ? <Badge variant="outline">{player.tier}</Badge> : <span className="text-xs text-muted-foreground">待定</span>}
+              {player ? null : <span className="text-xs text-muted-foreground">待定</span>}
             </li>
           );
         })}

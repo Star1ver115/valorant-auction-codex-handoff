@@ -50,9 +50,7 @@ export function AuctionStage({
           </span>
         </div>
         <div className="relative p-6 sm:p-8">
-          <span className="absolute right-5 top-4 text-7xl font-black text-foreground/[.035]">{current.tier}</span>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge>{current.tier}</Badge>
             <Badge variant="outline">{current.region}</Badge>
             <span className="text-xs text-muted-foreground">参考 {current.referencePrice} 块</span>
           </div>

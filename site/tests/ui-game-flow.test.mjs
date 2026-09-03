@@ -65,6 +65,7 @@ test("renders an active auction without a countdown", async () => {
   assert.match(html, new RegExp(currentName, "i"));
   assert.doesNotMatch(html, new RegExp(futureName, "i"));
   assert.match(html, /待揭晓/);
+  assert.doesNotMatch(html, />T(?:0(?:\.5)?|1(?:\.5)?)</);
   assert.doesNotMatch(html, /倒计时|剩余时间|自动出价|自动放弃/);
 });
 
@@ -84,6 +85,7 @@ test("shows a seven-unit award in roster and remaining budget", async () => {
 
   assert.match(html, new RegExp(player.name, "i"));
   assert.match(html, new RegExp(`${PLAYERS[buyer].nickname}预算[^<]*13 块`));
+  assert.doesNotMatch(html, />T(?:0(?:\.5)?|1(?:\.5)?)</);
 });
 
 test("shows the exact zero-budget choices and recovery notice", async () => {
