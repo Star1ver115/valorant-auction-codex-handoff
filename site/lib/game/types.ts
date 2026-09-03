@@ -154,3 +154,43 @@ export type AuctionTransition = {
   state: AuctionState;
   events: AuctionEvent[];
 };
+
+export type AgentRole = Exclude<Role, "FLEX">;
+
+export type TeamRosters = Record<TeamId, PlayerId[]>;
+
+export type MapBpStep = {
+  kind: "BAN" | "PICK" | "DECIDER";
+  map: MapId;
+  actor: TeamId | null;
+  sideSelector?: TeamId;
+  startingSide?: "ATTACK" | "DEFENSE";
+  reason: string;
+};
+
+export type MapBpResult = {
+  firstTeam: TeamId;
+  steps: MapBpStep[];
+  playOrder: MapId[];
+};
+
+export type AgentPick = {
+  playerId: PlayerId;
+  agent: AgentId;
+  role: AgentRole;
+  proficiency: number;
+};
+
+export type AgentComposition = {
+  map: MapId;
+  picks: AgentPick[];
+  coverage: {
+    controller: number;
+    initiator: number;
+    sentinel: number;
+    duelist: number;
+  };
+  score: number;
+  ledger: { P: number; M: number; R: number; S: number; F: number };
+  explanation: string;
+};

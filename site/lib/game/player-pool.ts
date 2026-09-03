@@ -264,3 +264,7 @@ export const PLAYER_POOL = [
     agents: [...AGENT_PROFICIENCY.boaster],
   },
 ] satisfies PlayerCard[];
+
+export const PLAYER_BY_ID = Object.fromEntries(
+  PLAYER_POOL.map((player) => [player.id, player]),
+) as Record<(typeof PLAYER_POOL)[number]["id"], PlayerCard>;

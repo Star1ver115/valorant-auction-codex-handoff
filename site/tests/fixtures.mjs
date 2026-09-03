@@ -71,3 +71,10 @@ export function zeroBudgetFixture() {
     zeroBudget: { zeroTeam: "A", solventTeam: "B", actor: "B" },
   };
 }
+
+export function completeRosters(offset = 0) {
+  const rotated = PLAYER_IDS.map(
+    (_, index) => PLAYER_IDS[(index + offset) % PLAYER_IDS.length],
+  );
+  return { A: rotated.slice(0, 5), B: rotated.slice(5) };
+}
