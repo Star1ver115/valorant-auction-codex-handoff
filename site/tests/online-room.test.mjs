@@ -55,6 +55,7 @@ test("rejects spectator writes and stale versions with the current snapshot", as
     code: "ACTION",
     seed: "action",
   });
+  await joinRoom(store, "ACTION", "客队", "PLAYER", 1);
   const spectator = await joinRoom(store, "ACTION", "观察者", "SPECTATOR", 1);
 
   await assert.rejects(
@@ -104,13 +105,14 @@ test("rejects spectator writes and stale versions with the current snapshot", as
 });
 
 test("deduplicates action IDs before stale-version rejection", async () => {
-  const { applyRoomAction, createRoom, MemoryRoomStore } = await loadRooms();
+  const { applyRoomAction, createRoom, joinRoom, MemoryRoomStore } = await loadRooms();
   const store = new MemoryRoomStore();
   const host = await createRoom(store, "房主", {
     now: 0,
     code: "REPLAY",
     seed: "replay",
   });
+  await joinRoom(store, "REPLAY", "客队", "PLAYER", 1);
   const request = {
     seatToken: host.seatToken,
     expectedVersion: 0,
@@ -134,4 +136,48 @@ test("expires inactive rooms after twenty-four hours", async () => {
     readRoom(store, "OLDONE", 500 + 24 * HOUR + 1),
     (error) => error.code === "ROOM_NOT_FOUND" && error.status === 404,
   );
+});
+
+test("lets only the host close new spectator joins", async () => {
+  const { createRoom, joinRoom, MemoryRoomStore, setRoomSpectatorsOpen } = await loadRooms();
+  const store = new MemoryRoomStore();
+  const host = await createRoom(store, "房主", { now: 0, code: "CLOSED", seed: "closed" });
+  const guest = await joinRoom(store, "CLOSED", "客队", "PLAYER", 1);
+
+  await assert.rejects(
+    setRoomSpectatorsOpen(store, "CLOSED", guest.seatToken, false, 2),
+    (error) => error.code === "WRONG_SEAT" && error.status === 403,
+  );
+  const closed = await setRoomSpectatorsOpen(store, "CLOSED", host.seatToken, false, 3);
+  assert.equal(closed.spectatorsOpen, false);
+  await assert.rejects(
+    joinRoom(store, "CLOSED", "迟到观众", "SPECTATOR", 4),
+    (error) => error.code === "SPECTATORS_CLOSED" && error.status === 403,
+  );
+});
+
+test("waits for the second player before the host can start", async () => {
+  const { applyRoomAction, createRoom, joinRoom, MemoryRoomStore } = await loadRooms();
+  const store = new MemoryRoomStore();
+  const host = await createRoom(store, "房主", { now: 0, code: "READY2", seed: "ready" });
+
+  await assert.rejects(
+    applyRoomAction(store, "READY2", {
+      seatToken: host.seatToken,
+      expectedVersion: 0,
+      actionId: "too-early",
+      action: { type: "START_GAME" },
+      now: 1,
+    }),
+    (error) => error.code === "WAITING_FOR_PLAYER" && error.status === 409,
+  );
+  await joinRoom(store, "READY2", "客队", "PLAYER", 2);
+  const started = await applyRoomAction(store, "READY2", {
+    seatToken: host.seatToken,
+    expectedVersion: 0,
+    actionId: "ready-start",
+    action: { type: "START_GAME" },
+    now: 3,
+  });
+  assert.equal(started.snapshot.phase, "AUCTION");
 });

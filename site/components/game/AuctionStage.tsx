@@ -18,9 +18,11 @@ const ROLE_LABEL = {
 export function AuctionStage({
   snapshot,
   onAction,
+  readOnly = false,
 }: {
   snapshot: PublicGameSnapshot;
   onAction: (action: GameAction) => void;
+  readOnly?: boolean;
 }) {
   const auction = snapshot.auction;
   const [amount, setAmount] = useState(1);
@@ -38,7 +40,7 @@ export function AuctionStage({
   if (!current || !actor) return null;
 
   return (
-    <section aria-label="拍卖操作区" className="grid min-w-0 gap-4">
+    <section aria-label={readOnly ? "拍卖直播区" : "拍卖操作区"} className="grid min-w-0 gap-4">
       <div className="broadcast-panel overflow-hidden">
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-border bg-muted/40 px-4 py-3">
           <span className="eyebrow">LOT {String(auction.lotIndex + 1).padStart(2, "0")}</span>
@@ -69,7 +71,11 @@ export function AuctionStage({
         </div>
       </div>
 
-      <div className="action-dock broadcast-panel p-4 sm:p-5">
+      {readOnly ? (
+        <div className="broadcast-panel border-analysis/50 bg-analysis/10 p-4 text-center text-sm text-muted-foreground">
+          {snapshot.players[actor].nickname} 正在操作，当前席位仅可观看。
+        </div>
+      ) : <div className="action-dock broadcast-panel p-4 sm:p-5">
         {auction.phase === "ZERO_BUDGET_SELECTION" ? (
           <div className="grid gap-3 sm:grid-cols-2">
             <Button
@@ -120,7 +126,7 @@ export function AuctionStage({
             </Button>
           </div>
         )}
-      </div>
+      </div>}
 
       <div aria-label="拍卖顺序" className="flex gap-1 overflow-x-auto pb-2">
         {ordered.map((player, index) => (

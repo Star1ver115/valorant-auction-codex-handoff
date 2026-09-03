@@ -5,24 +5,32 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import type { GameAction, PublicGameSnapshot, TeamId } from "@/lib/game/types";
 import { AuctionStage } from "./AuctionStage";
 import { Lobby } from "./Lobby";
+import type { LobbyOnline } from "./Lobby";
 import { RosterPanel } from "./RosterPanel";
+import { SpectatorBadge } from "./SpectatorBadge";
+
+export type OnlinePresentation = LobbyOnline & {
+  onSpectatorsOpenChange?: (open: boolean) => void;
+};
 
 export function GameShell({
   snapshot,
   notice,
   onAction,
   onReset,
+  online,
 }: {
   snapshot: PublicGameSnapshot;
   notice: string | null;
   onAction: (action: GameAction) => void;
   onReset: () => void;
+  online?: OnlinePresentation;
 }) {
   if (snapshot.phase === "LOBBY") {
     return (
       <main className="min-h-screen">
         {notice ? <RecoveryNotice notice={notice} /> : null}
-        <Lobby onStart={() => onAction({ type: "START_GAME" })} />
+        <Lobby online={online} onStart={() => onAction({ type: "START_GAME" })} />
       </main>
     );
   }
@@ -37,14 +45,32 @@ export function GameShell({
           <p className="eyebrow">PEAK AUCTION · LIVE DESK</p>
           <h1 className="text-xl font-black tracking-tight">巅峰选手拍卖</h1>
         </div>
-        <Button onClick={onReset} variant="ghost">重新开始</Button>
+        <div className="flex items-center gap-2">
+          {online?.code ? <span className="font-mono text-sm font-bold tracking-[.16em]">{online.code}</span> : null}
+          {online?.role === "SPECTATOR" ? <SpectatorBadge count={online.spectatorCount} /> : null}
+          {online?.role === "A" && online.onSpectatorsOpenChange ? (
+            <Button variant="ghost" onClick={() => online.onSpectatorsOpenChange?.(!online.spectatorsOpen)}>
+              {online.spectatorsOpen ? "关闭新观众" : "开放新观众"}
+            </Button>
+          ) : null}
+          <Button onClick={online?.code ? online.onLeave : onReset} variant="ghost">
+            {online?.code ? "退出房间" : "重新开始"}
+          </Button>
+        </div>
       </header>
       {notice ? <RecoveryNotice notice={notice} /> : null}
       <div className="mx-auto grid max-w-[1500px] gap-4 lg:grid-cols-[260px_minmax(0,1fr)_260px]">
         <div className="hidden lg:block">
           <Roster snapshot={snapshot} team="A" />
         </div>
-        <AuctionStage snapshot={snapshot} onAction={onAction} />
+        <AuctionStage
+          snapshot={snapshot}
+          onAction={onAction}
+          readOnly={Boolean(
+            online?.role === "SPECTATOR" ||
+            (online?.role && online.role !== auction.bidding?.actor && online.role !== auction.zeroBudget?.actor),
+          )}
+        />
         <div className="hidden lg:block">
           <Roster snapshot={snapshot} team="B" />
         </div>

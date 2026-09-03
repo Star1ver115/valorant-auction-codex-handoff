@@ -89,3 +89,11 @@ export function parseActionBody(body: Record<string, unknown>) {
     action: parseGameAction(body.action),
   };
 }
+
+export function parseSpectatorSettingsBody(body: Record<string, unknown>) {
+  const seatToken = requireTrimmedString(body, "seatToken", 256);
+  if (typeof body.open !== "boolean") {
+    throw new DomainError("INVALID_PAYLOAD", "open must be a boolean");
+  }
+  return { seatToken, open: body.open };
+}

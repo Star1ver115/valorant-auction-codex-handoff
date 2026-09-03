@@ -43,6 +43,7 @@ export interface RoomStore {
   listSeats(code: string): Promise<StoredSeat[]>;
   addSeat(seat: StoredSeat, spectatorCapacity: number): Promise<boolean>;
   updateLobbyState(code: string, stateJson: string, now: number): Promise<void>;
+  setSpectatorsOpen(code: string, open: boolean, now: number): Promise<void>;
   getAction(code: string, actionId: string): Promise<StoredRoomEvent | null>;
   listEvents(code: string): Promise<StoredRoomEvent[]>;
   commitAction(args: {
@@ -206,6 +207,24 @@ export async function readRoom(store: RoomStore, code: string, now = Date.now())
   return snapshotFrom(store, room);
 }
 
+export async function setRoomSpectatorsOpen(
+  store: RoomStore,
+  code: string,
+  seatToken: string,
+  open: boolean,
+  now = Date.now(),
+) {
+  const roomCode = normalizeCode(code);
+  const room = await store.getRoom(roomCode);
+  assertLive(room, now);
+  const seat = await findAuthorizedSeat(store, roomCode, seatToken);
+  if (seat.role !== "A") {
+    throw new RoomError("WRONG_SEAT", "Only the host can change spectator access", 403);
+  }
+  await store.setSpectatorsOpen(roomCode, open, now);
+  return snapshotFrom(store, { ...room, spectatorsOpen: open, lastActiveAt: now });
+}
+
 async function findAuthorizedSeat(store: RoomStore, code: string, token: string) {
   const seats = await store.listSeats(code);
   let authorized: StoredSeat | null = null;
@@ -244,6 +263,12 @@ export async function applyRoomAction(
   assertLive(room, now);
   const seat = await findAuthorizedSeat(store, roomCode, request.seatToken);
   assertSeatCanAct(seat, request.action);
+  if (request.action.type === "START_GAME") {
+    const seats = await store.listSeats(roomCode);
+    if (!seats.some((candidate) => candidate.role === "B")) {
+      throw new RoomError("WAITING_FOR_PLAYER", "The second player has not joined", 409, await snapshotFrom(store, room));
+    }
+  }
 
   const duplicate = await store.getAction(roomCode, request.actionId);
   if (duplicate) {
@@ -307,6 +332,11 @@ export class MemoryRoomStore implements RoomStore {
     if (room) this.rooms.set(code, { ...room, stateJson, lastActiveAt: now });
   }
 
+  async setSpectatorsOpen(code: string, open: boolean, now: number) {
+    const room = this.rooms.get(code);
+    if (room) this.rooms.set(code, { ...room, spectatorsOpen: open, lastActiveAt: now });
+  }
+
   async getAction(code: string, actionId: string) {
     return structuredClone(this.events.find((event) => event.roomCode === code && event.actionId === actionId) ?? null);
   }
@@ -362,6 +392,10 @@ export class D1RoomStore implements RoomStore {
 
   async updateLobbyState(code: string, stateJson: string, now: number) {
     await this.db.prepare("UPDATE rooms SET state_json = ?, last_active_at = ? WHERE code = ? AND version = 0").bind(stateJson, now, code).run();
+  }
+
+  async setSpectatorsOpen(code: string, open: boolean, now: number) {
+    await this.db.prepare("UPDATE rooms SET spectators_open = ?, last_active_at = ? WHERE code = ?").bind(open ? 1 : 0, now, code).run();
   }
 
   async getAction(code: string, actionId: string) {
