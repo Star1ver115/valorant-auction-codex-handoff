@@ -422,7 +422,7 @@ Expected: FAIL because the game components do not exist.
 
 - [ ] **Step 3: Implement local persistence and the recognizable auction screen**
 
-Persist `{ schemaVersion, seed, events }` under `peak-auction:local:v1`; validate before hydration and discard corrupt records with a visible recovery notice. Build the first viewport around the current player card, both budgets, both compact rosters, turn indicator, bid input, pass button, and auction-order strip.
+Persist `{ schemaVersion, seed, events }` under `peak-auction:local:v1`; validate before hydration and discard corrupt records with a visible recovery notice. Build the first viewport around the current player card, both budgets, both compact rosters, turn indicator, bid input, pass button, and a masked auction-progress strip that preserves completed names while showing every future card as `待揭晓`.
 
 - [ ] **Step 4: Apply mobile and keyboard behavior**
 

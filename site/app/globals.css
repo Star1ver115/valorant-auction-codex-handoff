@@ -59,6 +59,31 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+.broadcast-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, oklch(1 0 0 / 3%), transparent 40%),
+    var(--card);
+  box-shadow: 0 20px 80px oklch(0.05 0.02 255 / 18%);
+}
+
+.eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 767px) {
+  .action-dock {
+    position: sticky;
+    bottom: 4.5rem;
+    z-index: 10;
+  }
+}
+
 :root {
   --background: oklch(0.145 0.025 255);
   --foreground: oklch(0.94 0.018 88);
