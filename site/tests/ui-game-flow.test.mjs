@@ -257,3 +257,53 @@ test("renders the complete BP, agent draft, BO5 rail, statistics, and report", a
   assert.match(reportHtml, /溢价观察/);
   assert.ok((reportHtml.match(/data-win-factor=/g) ?? []).length >= 2);
 });
+
+test("keeps the primary game surface accessible and mobile-overflow safe", async () => {
+  const { createGame, GameShell, reduceGame } = await load();
+  const lobbyHtml = render(GameShell, createGame("ui-accessible-lobby", PLAYERS));
+  const active = reduceGame(createGame("ui-accessible-auction", PLAYERS), {
+    type: "START_GAME",
+  }).state;
+  const activeHtml = render(GameShell, active, "局面已更新");
+
+  assert.equal((lobbyHtml.match(/<h1\b/g) ?? []).length, 1);
+  assert.match(lobbyHtml, /<label[^>]*for="online-nickname"/);
+  assert.match(lobbyHtml, /<label[^>]*for="room-code"/);
+  assert.match(activeHtml, /<label[^>]*for="bid-amount"/);
+  assert.match(activeHtml, /<output[^>]*aria-live="polite"/);
+  assert.match(activeHtml, /<p[^>]*aria-live="polite"[^>]*aria-atomic="true"/);
+  assert.match(activeHtml, /<main[^>]*overflow-x-hidden/);
+  assert.match(activeHtml, /focus-visible:/);
+});
+
+test("restores a completed local simulation without changing its result", async () => {
+  const { createGame, publicSnapshot, reduceGame } = await load();
+  const { restoreLocalGame } = await vite.ssrLoadModule("/hooks/useLocalGame.ts");
+  let state = reduceGame(createGame("ui-terminal-restore", PLAYERS), {
+    type: "START_GAME",
+  }).state;
+  while (state.phase === "AUCTION" || state.phase === "ZERO_BUDGET_SELECTION") {
+    if (state.phase === "ZERO_BUDGET_SELECTION") {
+      state = reduceGame(state, {
+        type: "ZERO_CHOICE",
+        actor: state.auction.zeroBudget.actor,
+        choice: "DECLINE",
+      }).state;
+    } else {
+      const bidding = state.auction.bidding;
+      state = reduceGame(
+        state,
+        bidding.currentBid === null
+          ? { type: "BID", actor: bidding.actor, amount: 1 }
+          : { type: "PASS", actor: bidding.actor },
+      ).state;
+    }
+  }
+
+  const restored = restoreLocalGame(JSON.stringify({
+    schemaVersion: 1,
+    seed: state.seed,
+    events: state.eventLog,
+  }));
+  assert.deepEqual(publicSnapshot(restored), publicSnapshot(state));
+});

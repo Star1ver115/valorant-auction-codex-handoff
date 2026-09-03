@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createGame, publicSnapshot, reduceGame, replayGame } from "@/lib/game/engine";
 import type { DomainEvent, GameAction, GameState } from "@/lib/game/types";
 
@@ -42,6 +42,7 @@ export function useLocalGame() {
   );
   const [notice, setNotice] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const stateRef = useRef(state);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,14 +51,20 @@ export function useLocalGame() {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         try {
-          setState(restoreLocalGame(raw));
+          const restored = restoreLocalGame(raw);
+          stateRef.current = restored;
+          setState(restored);
         } catch {
           window.localStorage.removeItem(STORAGE_KEY);
-          setState(createGame(freshSeed(), DEFAULT_PLAYERS));
+          const fresh = createGame(freshSeed(), DEFAULT_PLAYERS);
+          stateRef.current = fresh;
+          setState(fresh);
           setNotice("本地记录损坏，已安全重开一局。");
         }
       } else {
-        setState(createGame(freshSeed(), DEFAULT_PLAYERS));
+        const fresh = createGame(freshSeed(), DEFAULT_PLAYERS);
+        stateRef.current = fresh;
+        setState(fresh);
       }
       setHydrated(true);
     });
@@ -77,13 +84,18 @@ export function useLocalGame() {
   }, [hydrated, state]);
 
   const dispatch = useCallback((action: GameAction) => {
-    setState((current) => reduceGame(current, action).state);
+    const next = reduceGame(stateRef.current, action).state;
+    stateRef.current = next;
+    setState(next);
     setNotice(null);
+    return publicSnapshot(next);
   }, []);
 
   const reset = useCallback(() => {
     window.localStorage.removeItem(STORAGE_KEY);
-    setState(createGame(freshSeed(), DEFAULT_PLAYERS));
+    const fresh = createGame(freshSeed(), DEFAULT_PLAYERS);
+    stateRef.current = fresh;
+    setState(fresh);
     setNotice("已开始一局新的同机对战。");
   }, []);
 

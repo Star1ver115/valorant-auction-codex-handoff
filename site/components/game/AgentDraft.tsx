@@ -46,7 +46,7 @@ function TeamDraft({ snapshot, team, map }: { snapshot: PublicGameSnapshot; team
       </ul>
       <Progress value={composition.score} className="mt-3">
         <ProgressLabel>阵容适配</ProgressLabel>
-        <ProgressValue>{composition.score.toFixed(2)}</ProgressValue>
+        <ProgressValue>{() => composition.score.toFixed(2)}</ProgressValue>
       </Progress>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">{composition.explanation}</p>
     </div>

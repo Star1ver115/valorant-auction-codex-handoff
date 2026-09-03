@@ -15,6 +15,7 @@ import type {
   GameTransition,
   MapId,
   PublicGameSnapshot,
+  PublicDomainEvent,
   TeamId,
 } from "./types";
 import { DomainError } from "./validation";
@@ -178,5 +179,27 @@ export function replayGame(seed: string, events: readonly DomainEvent[]): GameSt
 
 export function publicSnapshot(state: GameState): PublicGameSnapshot {
   const { authorization: _authorization, ...safe } = state;
-  return structuredClone(safe);
+  const visibleOrder = publicAuctionOrder(state);
+  return structuredClone({
+    ...safe,
+    auction: state.auction ? { ...state.auction, order: visibleOrder } : null,
+    eventLog: publicEvents(state.eventLog, visibleOrder),
+  });
+}
+
+export function publicEvents(
+  events: readonly DomainEvent[],
+  visibleOrder: Array<string | null>,
+): PublicDomainEvent[] {
+  return events.map((event) => event.type === "GAME_STARTED"
+    ? { ...event, order: [...visibleOrder] }
+    : structuredClone(event)) as PublicDomainEvent[];
+}
+
+function publicAuctionOrder(state: GameState) {
+  if (!state.auction) return [];
+  const revealThrough = state.auction.phase === "COMPLETE"
+    ? state.auction.order.length - 1
+    : state.auction.lotIndex;
+  return state.auction.order.map((id, index) => index <= revealThrough ? id : null);
 }

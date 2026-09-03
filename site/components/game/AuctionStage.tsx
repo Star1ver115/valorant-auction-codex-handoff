@@ -35,7 +35,7 @@ export function AuctionStage({
     ? 1
     : (auction.bidding?.currentBid ?? 0) + 1;
   const maximum = actor ? auction.teams[actor].budget : 0;
-  const ordered = auction.order.map((id) => PLAYER_BY_ID[id]);
+  const ordered = auction.order.map((id) => id ? PLAYER_BY_ID[id] : null);
 
   if (!current || !actor) return null;
 
@@ -131,13 +131,13 @@ export function AuctionStage({
       <div aria-label="拍卖顺序" className="flex gap-1 overflow-x-auto pb-2">
         {ordered.map((player, index) => (
           <div
-            key={player.id}
+            key={player?.id ?? `hidden-${index}`}
             aria-current={index === auction.lotIndex ? "step" : undefined}
             className={`min-w-20 border px-2 py-2 text-center text-xs ${index === auction.lotIndex ? "border-team-a bg-team-a/10" : "border-border bg-card/60"} ${index < auction.lotIndex ? "opacity-45" : ""}`}
           >
             <span className="block font-mono text-[10px] text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
             <span className="font-semibold">
-              {index <= auction.lotIndex ? player.name : "待揭晓"}
+              {index <= auction.lotIndex && player ? player.name : "待揭晓"}
             </span>
           </div>
         ))}

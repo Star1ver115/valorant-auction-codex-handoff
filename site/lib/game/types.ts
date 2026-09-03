@@ -342,4 +342,18 @@ export type GameTransition = {
   events: DomainEvent[];
 };
 
-export type PublicGameSnapshot = Omit<GameState, "authorization">;
+export type PublicAuctionState = Omit<AuctionState, "order"> & {
+  order: Array<PlayerId | null>;
+};
+
+export type PublicDomainEvent =
+  | Exclude<DomainEvent, { type: "GAME_STARTED" }>
+  | { type: "GAME_STARTED"; order: Array<PlayerId | null> };
+
+export type PublicGameSnapshot = Omit<
+  GameState,
+  "authorization" | "auction" | "eventLog"
+> & {
+  auction: PublicAuctionState | null;
+  eventLog: PublicDomainEvent[];
+};

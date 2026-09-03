@@ -175,7 +175,7 @@ export function useOnlineRoom() {
   }, [saveSession]);
 
   const submit = useCallback(async (action: GameAction) => {
-    if (!session || !room) return;
+    if (!session || !room) return undefined;
     setConnection("CONNECTING");
     try {
       const result = await submitOnlineAction(fetch, {
@@ -187,6 +187,7 @@ export function useOnlineRoom() {
       setRoom(result.response);
       setConnection("CONNECTED");
       setMessage(result.conflict ? "房间已同步到最新状态，请重试操作。" : null);
+      return result.response.snapshot;
     } catch (error) {
       setConnection("ERROR");
       setMessage(error instanceof Error ? error.message : "提交操作失败");

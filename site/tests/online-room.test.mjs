@@ -180,4 +180,46 @@ test("waits for the second player before the host can start", async () => {
     now: 3,
   });
   assert.equal(started.snapshot.phase, "AUCTION");
+  const futurePlayer = store.debugEvents("READY2").length
+    ? JSON.parse(store.debugEvents("READY2")[0].stateJson).auction.order[1]
+    : null;
+  assert.ok(futurePlayer);
+  assert.equal(JSON.stringify(started).includes(futurePlayer), false);
+});
+
+test("keeps a disconnected auction unchanged and hydrates a late spectator", async () => {
+  const { applyRoomAction, createRoom, joinRoom, readRoom, MemoryRoomStore } = await loadRooms();
+  const store = new MemoryRoomStore();
+  const host = await createRoom(store, "房主", { now: 0, code: "RECONN", seed: "reconnect" });
+  await joinRoom(store, "RECONN", "客队", "PLAYER", 1);
+  const started = await applyRoomAction(store, "RECONN", {
+    seatToken: host.seatToken,
+    expectedVersion: 0,
+    actionId: "start-reconnect",
+    action: { type: "START_GAME" },
+    now: 2,
+  });
+
+  const afterDisconnect = await readRoom(store, "RECONN", 12 * HOUR);
+  assert.equal(afterDisconnect.version, started.version);
+  assert.deepEqual(afterDisconnect.snapshot, started.snapshot);
+
+  const spectator = await joinRoom(store, "RECONN", "迟到观众", "SPECTATOR", 12 * HOUR + 1);
+  assert.equal(spectator.role, "SPECTATOR");
+  assert.equal(spectator.version, started.version);
+  assert.deepEqual(spectator.snapshot, started.snapshot);
+});
+
+test("rejects a third player without consuming a spectator seat", async () => {
+  const { createRoom, joinRoom, MemoryRoomStore } = await loadRooms();
+  const store = new MemoryRoomStore();
+  await createRoom(store, "房主", { now: 0, code: "FULL22", seed: "full-room" });
+  await joinRoom(store, "FULL22", "客队", "PLAYER", 1);
+
+  await assert.rejects(
+    joinRoom(store, "FULL22", "第三名玩家", "PLAYER", 2),
+    (error) => error.code === "PLAYER_CAPACITY" && error.status === 409,
+  );
+  const spectator = await joinRoom(store, "FULL22", "观众", "SPECTATOR", 3);
+  assert.equal(spectator.spectatorCount, 1);
 });

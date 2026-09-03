@@ -13,6 +13,7 @@ import { MapBpStage } from "./MapBpStage";
 import { AgentDraft } from "./AgentDraft";
 import { Bo5Broadcast } from "./Bo5Broadcast";
 import { PostMatchReport } from "./PostMatchReport";
+import { useGameWebMcp } from "@/hooks/useGameWebMcp";
 
 export type OnlinePresentation = LobbyOnline & {
   onSpectatorsOpenChange?: (open: boolean) => void;
@@ -31,9 +32,20 @@ export function GameShell({
   onReset: () => void;
   online?: OnlinePresentation;
 }) {
+  const activeActor = snapshot.auction?.bidding?.actor ?? snapshot.auction?.zeroBudget?.actor;
+  const canAct = snapshot.phase === "LOBBY"
+    ? !online?.code || online.role === "A"
+    : (snapshot.phase === "AUCTION" || snapshot.phase === "ZERO_BUDGET_SELECTION") &&
+      (!online?.code || online.role === activeActor);
+  useGameWebMcp({
+    readSnapshot: () => snapshot,
+    submitAction: onAction,
+    canAct,
+  });
+
   if (snapshot.phase === "LOBBY") {
     return (
-      <main className="min-h-screen">
+      <main className="min-h-screen overflow-x-hidden">
         {notice ? <RecoveryNotice notice={notice} /> : null}
         <Lobby online={online} onStart={() => onAction({ type: "START_GAME" })} />
       </main>
@@ -48,7 +60,7 @@ export function GameShell({
   }
 
   return (
-    <main className="min-h-screen px-4 pb-24 pt-4 sm:px-6 lg:pb-8">
+    <main className="min-h-screen overflow-x-hidden px-4 pb-24 pt-4 sm:px-6 lg:pb-8">
       <GameHeader online={online} onReset={onReset} />
       {notice ? <RecoveryNotice notice={notice} /> : null}
       <div className="mx-auto grid max-w-[1500px] gap-4 lg:grid-cols-[260px_minmax(0,1fr)_260px]">
@@ -105,7 +117,7 @@ function ResultsSequence({ snapshot, notice, online, onReset }: {
   }, [speed, visibleStage]);
 
   return (
-    <main className="min-h-screen px-4 pb-12 pt-4 sm:px-6">
+    <main className="min-h-screen overflow-x-hidden px-4 pb-12 pt-4 sm:px-6">
       <GameHeader online={online} onReset={onReset} />
       {notice ? <RecoveryNotice notice={notice} /> : null}
       <div className="mx-auto mb-4 flex max-w-[1500px] flex-wrap items-center justify-between gap-2 border border-border bg-card/70 p-3">
@@ -162,7 +174,7 @@ function Roster({ snapshot, team }: { snapshot: PublicGameSnapshot; team: TeamId
 
 function RecoveryNotice({ notice }: { notice: string }) {
   return (
-    <output className="mx-auto mb-3 block max-w-5xl border border-analysis/50 bg-analysis/10 px-4 py-3 text-sm">
+    <output aria-live="polite" className="mx-auto mb-3 block max-w-5xl border border-analysis/50 bg-analysis/10 px-4 py-3 text-sm">
       {notice}
     </output>
   );

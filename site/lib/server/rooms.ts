@@ -1,5 +1,5 @@
-import { createGame, publicSnapshot, reduceGame } from "@/lib/game/engine";
-import type { DomainEvent, GameAction, GameState, PublicGameSnapshot, TeamId } from "@/lib/game/types";
+import { createGame, publicEvents, publicSnapshot, reduceGame } from "@/lib/game/engine";
+import type { DomainEvent, GameAction, GameState, PublicDomainEvent, PublicGameSnapshot, TeamId } from "@/lib/game/types";
 import { DomainError } from "@/lib/game/validation";
 import { createSeatToken, hashSeatToken, tokenMatches } from "./auth";
 
@@ -70,7 +70,7 @@ export class RoomError extends DomainError {
 export type SnapshotResponse = {
   version: number;
   snapshot: PublicGameSnapshot;
-  events: DomainEvent[];
+  events: PublicDomainEvent[];
   spectatorCount: number;
   spectatorsOpen: boolean;
 };
@@ -104,10 +104,14 @@ function assertLive(room: StoredRoom | null, now: number): asserts room is Store
 async function snapshotFrom(store: RoomStore, room: StoredRoom): Promise<SnapshotResponse> {
   const [seats, allRecords] = await Promise.all([store.listSeats(room.code), store.listEvents(room.code)]);
   const records = allRecords.filter((record) => record.version <= room.version);
+  const snapshot = publicSnapshot(roomState(room));
   return {
     version: room.version,
-    snapshot: publicSnapshot(roomState(room)),
-    events: records.flatMap((record) => JSON.parse(record.eventJson) as DomainEvent[]),
+    snapshot,
+    events: publicEvents(
+      records.flatMap((record) => JSON.parse(record.eventJson) as DomainEvent[]),
+      snapshot.auction?.order ?? [],
+    ),
     spectatorCount: seats.filter((seat) => seat.role === "SPECTATOR").length,
     spectatorsOpen: room.spectatorsOpen,
   };

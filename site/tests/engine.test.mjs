@@ -103,3 +103,30 @@ test("removes authorization material from public snapshots", async () => {
   assert.equal(JSON.stringify(snapshot).includes("secret-a"), false);
   assert.equal(JSON.stringify(snapshot).includes("hash-a"), false);
 });
+
+test("reveals only the current and completed auction cards in public snapshots", async () => {
+  const { createGame, publicSnapshot, reduceGame } = await loadEngine();
+  let state = reduceGame(createGame("engine-hidden-order", PLAYERS), {
+    type: "START_GAME",
+  }).state;
+  const first = state.auction.order[0];
+  const second = state.auction.order[1];
+  const initial = publicSnapshot(state);
+
+  assert.equal(initial.auction.order[0], first);
+  assert.equal(initial.auction.order.slice(1).every((id) => id === null), true);
+  assert.equal(JSON.stringify(initial).includes(second), false);
+
+  state = reduceGame(state, {
+    type: "BID",
+    actor: state.auction.bidding.actor,
+    amount: 1,
+  }).state;
+  state = reduceGame(state, {
+    type: "PASS",
+    actor: state.auction.bidding.actor,
+  }).state;
+  const afterAward = publicSnapshot(state);
+  assert.deepEqual(afterAward.auction.order.slice(0, 2), [first, second]);
+  assert.equal(afterAward.auction.order.slice(2).every((id) => id === null), true);
+});
